@@ -281,7 +281,7 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 2
+			number = 1
 			
 			global firstConnection
 			if (not firstConnection):
@@ -308,10 +308,11 @@ def TurnClientIntoServer():
 			print("sending initiliaze data")
 			global penWidth,rows,filledThreshold,myUserID
 			ownIP = socket.gethostbyname(socket.gethostname())
+			 
 			penWidth = 1
 			rows = 10
 			filledThreshold = 30
-			 
+			
 			myUserID =0
 			toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
 		   
@@ -323,6 +324,7 @@ def TurnClientIntoServer():
 				toSend.update({"UserID":i+1})
 				ConnectionList[i].send(pickle.dumps(toSend))
 				del toSend["UserID"]
+			startLock.release()
 			break
 '''
 		if(isServer):
@@ -393,7 +395,7 @@ def addLine(event):
 		event.widget.create_line((lastx, lasty, event.x, event.y), width=5)
 		lastx, lasty = event.x, event.y
 
-		print( (lastx, lasty) )
+		#print( (lastx, lasty) )
 		global AreaList
 		AreaList.append(tuple((lastx, lasty)))
 		AreaList = list(set(AreaList))
@@ -422,9 +424,11 @@ def doneStroke(event):
 			position = int(id[8])*10 + int(id[9])
 		if(len(id)==8):
 			position = 1
-		print("Position", position)
+		#print("Position", position)
 
 		if len(AreaList)>20:
+
+
 			color = colors[int(myUserID)%4]
 			event.widget.config(bg=color, state="disabled")
 			
@@ -487,13 +491,15 @@ Server = input()
 
 if(Server=="yes"):
 	isServer = True
+	startLock.acquire()
+	
 else:
 	isServer = False
 
 countNumber = 0
 
 if (not isServer):
-	IPList.append(socket.gethostname())
+	IPList.append('192.168.0.10')
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
 	UpdateBoard.start()
