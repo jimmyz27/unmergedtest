@@ -353,8 +353,10 @@ def PositionIntoIndex(position):
 
 def xy(event):
 	global lastx, lasty  
-	lastx, lasty = event.x, event.y
-	if event.widget.cget('state') != 'disabled':   
+	
+	if event.widget.cget('state') != 'disabled': 
+		lastx, lasty = event.x, event.y
+		mouseEventList.extend([lastx, lasty])  
 		id = str(event.widget)
 		position =0
 		if(len(id)==9):
@@ -399,7 +401,8 @@ def addLine(event):
 		if event.y < 0:
 			event.y = 0
 		#Creates a line in the clicked on widget
-		event.widget.create_line((lastx, lasty, event.x, event.y), width=5)
+		event.widget.create_line((lastx, lasty, event.x, event.y), width=penWidth)
+		mouseEventList.extend([event.x, event.y])
 		lastx, lasty = event.x, event.y
 
 		#print( (lastx, lasty) )
