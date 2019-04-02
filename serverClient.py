@@ -244,7 +244,6 @@ class UpdateClientFromServer(threading.Thread):
 					startLock.release()
 				
 				
-
 			except socket.timeout:
 			 
 				global notConnected
@@ -288,13 +287,13 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 1
+			number = 2
 			
 			global firstConnection
 			if (not firstConnection):
 				print("not first connection")
 				#len of the IP list now for that many clients. 
-				number = 1
+				number = number -1
 
 			if(isServer):
 				while players<number: 
@@ -315,8 +314,14 @@ def TurnClientIntoServer():
 			print("sending initiliaze data")
 			global penWidth,rows,filledThreshold,myUserID
 			ownIP = socket.gethostbyname(socket.gethostname())
-			 
-			penWidth = 5
+			#inpput here
+			print("Enter Pen width(1-10)")
+			#inPenwidth = input()
+
+			penWidth = 10
+
+			print("Enter ")
+			
 			rows = 6
 			filledThreshold = 25
 			
@@ -454,7 +459,9 @@ def doneStroke(event):
 
 			color = colors[int(myUserID)%4]
 			event.widget.config(bg=color, state="disabled")
-			
+
+			percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
+			mouseEventList.clear()
 
 			if (isServer):
 				lock.acquire()
@@ -462,6 +469,7 @@ def doneStroke(event):
 				CurrentGameBoard[int(position)-1].state = "disabled"
 				CurrentGameBoard[int(position)-1].UserID = myUserID
 				lock.release()
+				#clear list?
 			elif (not isServer):
 				SquareState.color = color
 				SquareState.state = "disabled"
@@ -470,12 +478,14 @@ def doneStroke(event):
 				message = {"gameState":SquareState}
 				data = pickle.dumps(message)
 				tcpClientA.send(data) 
+				#clear list?
 
 		   
 		#add delay here to sync time
 		else:
 			#is this important what does it do?
 			percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
+			mouseEventList.clear()
 			print("not over 50")
 			if(isServer):
 				lock.acquire()
@@ -524,7 +534,8 @@ else:
 countNumber = 0
 
 if (not isServer):
-	IPList.append('192.168.0.10')
+	#IPList.append('192.168.0.10')
+	IPList.append(socket.gethostname())
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
 	UpdateBoard.start()
