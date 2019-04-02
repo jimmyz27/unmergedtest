@@ -1,10 +1,9 @@
 
+import socket 
 from tkinter import *
 import numpy as np
 from PIL import Image
 from PIL import ImageDraw
-import socket 
-
 import _thread
 import pickle
 import threading
@@ -13,11 +12,19 @@ import threading
 import time
 from time import sleep
 
-from tkinter import *
 import random
 import sys
  
  
+squareSize = 50
+penWidth = 0
+img = Image.new('1', (squareSize, squareSize), 0)  
+percentFilledChecker = ImageDraw.Draw(img)
+filledThreshold = 0.5
+
+mouseEventList = []
+pixels = squareSize*squareSize
+
 
 global connectionIsOK
 connectionISOK = True
@@ -407,9 +414,19 @@ def addLine(event):
 
 def doneStroke(event):
 	if event.widget.cget('state') != 'disabled':
+		
+
 		#DEBUG - Picks a random color to set the BG   
 		#Clears all the drawing inside the Canvas
 		global SquareState
+		global percentFilled, filledThreshold
+		percentFilledChecker.line(mouseEventList, fill=1, width=penWidth)
+		output = np.asarray(img)
+		percentFilled = np.count_nonzero(output)/pixels
+		percentFilledString = str(int(round(percentFilled*100, 0)))
+		print("Percent Filled: " + percentFilledString)
+		#Clears the image for reuse, seems faster than remaking the image everytime
+		percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
 		#Sets the background color and disables the canvas
 		color = "grey"
 		print ("canvas List:")
@@ -424,10 +441,11 @@ def doneStroke(event):
 			position = int(id[8])*10 + int(id[9])
 		if(len(id)==8):
 			position = 1
+	
+		print("percent filled vs threashold",int(percentFilledString),int(filledThreshold))
 		#print("Position", position)
 
-		if len(AreaList)>20:
-
+		if (int(percentFilledString)> int(filledThreshold)):
 
 			color = colors[int(myUserID)%4]
 			event.widget.config(bg=color, state="disabled")
