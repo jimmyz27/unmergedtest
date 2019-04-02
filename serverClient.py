@@ -41,6 +41,7 @@ global reconnectLock
 global serverLock
 global lock
 global IPList
+global startLock
 notConnected = True
 
 firstConnection = True
@@ -60,6 +61,7 @@ serverLock = threading.BoundedSemaphore(value=1)
 reconnectLock = threading.BoundedSemaphore(value=1)
 
 syncLock = threading.BoundedSemaphore(value=1)
+startLock = threading.BoundedSemaphore(value=1)
  # try to connect to the new server here 
 				# if success close the previous, 
 				# reset a socket to anotehr ip.
@@ -189,6 +191,8 @@ class UpdateClientFromServer(threading.Thread):
 		global firstConnection 
 		global tcpClientA
 		global CurrentGameBoard
+		global IPList,penWidth,rows,filledThreshold,myUserID
+
 		while True :  
 			try:
 				if(firstConnection):
@@ -215,7 +219,7 @@ class UpdateClientFromServer(threading.Thread):
 
 	
 				elif( "initialise" in data):
-					global IPList,penWidth,rows,filledThreshold,myUserID
+					
 					print("initialise", data)
 					IPList = data["IPList"]
 					print("IpListRecieved",IPList)
@@ -230,6 +234,7 @@ class UpdateClientFromServer(threading.Thread):
 					print("Threshold received",filledThreshold)
 					myUserID = data["UserID"]
 					print("UserID received",myUserID)
+					startLock.release()
 				
 				
 
@@ -306,7 +311,7 @@ def TurnClientIntoServer():
 			penWidth = 1
 			rows = 10
 			filledThreshold = 30
-			global myUserID 
+			 
 			myUserID =0
 			toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
 		   
@@ -492,6 +497,8 @@ if (not isServer):
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
 	UpdateBoard.start()
+	startLock.acquire()
+
 	#start thread here
 
 
@@ -500,7 +507,7 @@ _thread.start_new_thread(TurnClientIntoServer,())
 
 
 
-
+startLock.acquire()
 for r in range(rows):
 	for c in range(rows):
 		item = Canvas(window, bg="grey", height=squareSize, width=squareSize)
@@ -508,7 +515,6 @@ for r in range(rows):
 		item.bind("<Button-1>", xy)
 		item.bind("<B1-Motion>", addLine)
 		item.bind("<B1-ButtonRelease>", doneStroke)
-	   
 		canvasList.append(item)
 		countNumber =countNumber+1
 		state = GameStateObj()
