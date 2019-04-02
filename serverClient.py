@@ -25,7 +25,7 @@ connectionISOK = True
 window = Tk()
 window.title("Divide and Conquer")
 global rows
-rows = 4
+rows = 10
 squareSize = 50
 global canvasList 
 global CurrentGameBoard
@@ -207,14 +207,15 @@ class UpdateClientFromServer(threading.Thread):
 							print(i,CurrentGameBoard[i-1].state)
 							canvasList[i-1].config(background = CurrentGameBoard[i-1].color, state = CurrentGameBoard[i-1].state)#, state = CurrentGameBoard[i-1].state)
 				
-				elif( "IPList" in data):
-					print("IpListRecieved",data["IPList"])
-					global IPList
-					IPList = data["IPList"]
-					print(IPList)
+				#elif( "IPList" in data):
+					#print("IpListRecieved",data["IPList"])
+					#global IPList
+					#IPList = data["IPList"]
+					#print(IPList)
 
 	
 				elif( "initialise" in data):
+					global IPList,penWidth,rows,filledThreshold,myUserID
 					print("initialise", data)
 					IPList = data["IPList"]
 					print("IpListRecieved",IPList)
@@ -300,6 +301,7 @@ def TurnClientIntoServer():
 
 		if(isServer):
 			print("sending initiliaze data")
+			global penWidth,rows,filledThreshold,myUserID
 			ownIP = socket.gethostbyname(socket.gethostname())
 			penWidth = 1
 			rows = 10
@@ -470,8 +472,8 @@ def doneStroke(event):
 		event.widget.delete("all")
 		
  
-print("EnterID")
-myUserID = input()
+#print("EnterID")
+#myUserID = input()
 
 print("isServer?")
 Server = input()
@@ -495,6 +497,8 @@ if (not isServer):
 
  
 _thread.start_new_thread(TurnClientIntoServer,())
+
+
 
 
 for r in range(rows):
