@@ -213,22 +213,22 @@ class UpdateClientFromServer(threading.Thread):
 					IPList = data["IPList"]
 					print(IPList)
 
-				
+	
 				elif( "initialise" in data):
-                    print("initialise",data)
-                    IPList = data["IPList"]
-                    print("IpListRecieved",IPList)
+					print("initialise", data)
+					IPList = data["IPList"]
+					print("IpListRecieved",IPList)
 
-                    penWidth = data["Penwidth"]
-                    print("penWidthreceived",penWidth)
+					penWidth = data["Penwidth"]
+					print("penWidthreceived",penWidth)
 
-                    rows = data["rows"]
-                    print("rows received:",rows)
+					rows = data["rows"]
+					print("rows received:",rows)
 
-                    filledThreshold = data["threshold"]
-                    print("Threshold received",filledThreshold)
-                    myUserID = data["UserID"]
-                    print("UserID received",myUserID)
+					filledThreshold = data["threshold"]
+					print("Threshold received",filledThreshold)
+					myUserID = data["UserID"]
+					print("UserID received",myUserID)
 				
 				
 
@@ -297,33 +297,34 @@ def TurnClientIntoServer():
 					except:
 						print ("Error: unable to start thread")
 					players = players+1
-		
-		 if(isServer):
-            print("sending initiliaze data")
-            ownIP = socket.gethostbyname(socket.gethostname())
-            penWidth = 1
-            rows = 10
-            filledThreshold = 30
 
-            toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
-           
-            print(rows)
-            print(penWidth)
-            print(filledThreshold)
-     
-            for i in range (len(ConnectionList)):#len(IPList):
-                toSend.update({"UserID":i+1})
-                ConnectionList[i].send(pickle.dumps(toSend))
-                del toSend["UserID"]
-            break
-         '''
+		if(isServer):
+			print("sending initiliaze data")
+			ownIP = socket.gethostbyname(socket.gethostname())
+			penWidth = 1
+			rows = 10
+			filledThreshold = 30
+			global myUserID 
+			myUserID =0
+			toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
+		   
+			print(rows)
+			print(penWidth)
+			print(filledThreshold)
+	 
+			for i in range (len(ConnectionList)):#len(IPList):
+				toSend.update({"UserID":i+1})
+				ConnectionList[i].send(pickle.dumps(toSend))
+				del toSend["UserID"]
+			break
+'''
 		if(isServer):
 			ownIP = socket.gethostbyname(socket.gethostname())
 			disctIpList = {"IPList":IPList}
 			for i in range (len(ConnectionList)):#len(IPList):
 				ConnectionList[i].send(pickle.dumps(disctIpList))
 			break
-		'''
+'''
 		 
 	   
 		#threads.append(newthread)
