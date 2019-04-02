@@ -1,5 +1,8 @@
 # distributed game 
 
-#still need to sync clocks and add GUI
- 
+Titled: Deny and conquer
+
+project for Sfu cmpt 431
+
+
  
