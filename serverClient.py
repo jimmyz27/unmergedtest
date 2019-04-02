@@ -215,7 +215,7 @@ class UpdateClientFromServer(threading.Thread):
 						if (CurrentGameBoard[i-1].UserID == myUserID and CurrentGameBoard[i-1].color=="yellow" and CurrentGameBoard[i-1].state=="disabled"):
 							continue
 						else:
-							print(i,CurrentGameBoard[i-1].state)
+							#print(i,CurrentGameBoard[i-1].state)
 							canvasList[i-1].config(background = CurrentGameBoard[i-1].color, state = CurrentGameBoard[i-1].state)#, state = CurrentGameBoard[i-1].state)
 				
 				#elif( "IPList" in data):
@@ -316,9 +316,9 @@ def TurnClientIntoServer():
 			global penWidth,rows,filledThreshold,myUserID
 			ownIP = socket.gethostbyname(socket.gethostname())
 			 
-			penWidth = 1
-			rows = 10
-			filledThreshold = 30
+			penWidth = 5
+			rows = 6
+			filledThreshold = 25
 			
 			myUserID =0
 			toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
@@ -414,7 +414,6 @@ def addLine(event):
 
 
 
-
 def doneStroke(event):
 	if event.widget.cget('state') != 'disabled':
 		
@@ -428,8 +427,11 @@ def doneStroke(event):
 		percentFilled = np.count_nonzero(output)/pixels
 		percentFilledString = str(int(round(percentFilled*100, 0)))
 		print("Percent Filled: " + percentFilledString)
+		#percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
+		#mouseEventList.clear()
+
 		#Clears the image for reuse, seems faster than remaking the image everytime
-		percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
+		#
 		#Sets the background color and disables the canvas
 		color = "grey"
 		print ("canvas List:")
@@ -472,6 +474,8 @@ def doneStroke(event):
 		   
 		#add delay here to sync time
 		else:
+			#is this important what does it do?
+			percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
 			print("not over 50")
 			if(isServer):
 				lock.acquire()
@@ -529,9 +533,7 @@ if (not isServer):
 	#start thread here
 
 
- 
 _thread.start_new_thread(TurnClientIntoServer,())
-
 
 
 startLock.acquire()
@@ -549,10 +551,10 @@ for r in range(rows):
 		state.color = "grey"
 		state.state = "normal"
 		CurrentGameBoard.append(state)
-
-
-
+startLock.release()
 					   
+
+
 print(window.grid_size())
 window.mainloop()
  
