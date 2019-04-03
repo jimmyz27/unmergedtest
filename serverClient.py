@@ -93,6 +93,7 @@ SquareState = GameStateObj()
 ServerSquareState =  GameStateObj()
 
 def PriorityServerUpdate(gameStateDict):
+	global ReceiveQueue
 	if ("gameState" in gameStateDict):
 		#message = GameStateObj()
 		Message = gameStateDict["gameState"]
@@ -103,13 +104,13 @@ def PriorityServerUpdate(gameStateDict):
 			ReceiveQueue.remove(priorityValue)
 			priorityState = priorityValue["gameState"]
 			if(CurrentGameBoard[int(priorityState.canvasNumber)-1].state !="disabled"):
-				lock.acquire()
+				#lock.acquire()
 				print("priority queue processed Server:",priorityState.UserID)
 				CurrentGameBoard[int(priorityState.canvasNumber)-1].color = priorityState.color
 				CurrentGameBoard[int(priorityState.canvasNumber)-1].UserID = priorityState.UserID
 				CurrentGameBoard[int(priorityState.canvasNumber)-1].state = priorityState.state
-				canvasList[int(priorityState.canvasNumber)-1].config(background = priorityState.color,state = priorityState.state)
-				lock.release()
+				#canvasList[int(priorityState.canvasNumber)-1].config(background = priorityState.color,state = priorityState.state)
+				#lock.release()
 		else:
 			lock.acquire()
 			print("direct Updating value for Server",Message.UserID)
@@ -432,17 +433,26 @@ def xy(event):
 			position = 1
 		print("Position", position)
 		if (isServer):
-			lock.acquire()
+			#lock.acquire()
 			#buffer system to check the times, then if that time is
 			# smallest then set it, 
 			# other wise, dont
 			# server buffer time is added some delay. 
+			ServerSquareState.color = "yellow"
+			ServerSquareState.state = "disabled"
+			ServerSquareState.canvasNumber = position
+			ServerSquareState.UserID = myUserID
 			currentTime = time.time()
-			CurrentGameBoard[int(position)-1].color = "yellow" 
-			CurrentGameBoard[int(position)-1].state = "disabled"
-			CurrentGameBoard[int(position)-1].UserID = myUserID
+			#add some delay time aswell. 
+			message = {"gameState":ServerSquareState,"Time":currentTime}
+			PriorityServerUpdate(message)
+			
+			#currentTime = time.time()
+			#CurrentGameBoard[int(position)-1].color = "yellow" 
+			#CurrentGameBoard[int(position)-1].state = "disabled"
+			#CurrentGameBoard[int(position)-1].UserID = myUserID
 			# add user
-			lock.release()
+			#lock.release()
 
 		elif (not isServer):
 			SquareState.color = "yellow"
@@ -530,11 +540,18 @@ def doneStroke(event):
 			mouseEventList.clear()
 
 			if (isServer):
-				lock.acquire()
-				CurrentGameBoard[int(position)-1].color = color
-				CurrentGameBoard[int(position)-1].state = "disabled"
-				CurrentGameBoard[int(position)-1].UserID = myUserID
-				lock.release()
+				ServerSquareState.color = color
+				ServerSquareState.state = "disabled"
+				ServerSquareState.canvasNumber = position
+				ServerSquareState.UserID = myUserID
+				message = {"gameState":ServerSquareState}
+				PriorityServerUpdate(message)
+
+				#lock.acquire()
+				#CurrentGameBoard[int(position)-1].color = color
+				#CurrentGameBoard[int(position)-1].state = "disabled"
+				#CurrentGameBoard[int(position)-1].UserID = myUserID
+				#lock.release()
 				#clear list?
 			elif (not isServer):
 				SquareState.color = color
@@ -555,12 +572,18 @@ def doneStroke(event):
 			mouseEventList.clear()
 			print("not over 50")
 			if(isServer):
-				lock.acquire()
-				CurrentGameBoard[int(position)-1].color = "grey" 
-				CurrentGameBoard[int(position)-1].state = "normal"
-				CurrentGameBoard[int(position)-1].UserID = ""
+				ServerSquareState.color = "grey"
+				ServerSquareState.state = "normal"
+				ServerSquareState.canvasNumber = position
+				ServerSquareState.UserID = ""
+				message = {"gameState":ServerSquareState}
+				PriorityServerUpdate(message)
+				#lock.acquire()
+				#CurrentGameBoard[int(position)-1].color = "grey" 
+				#CurrentGameBoard[int(position)-1].state = "normal"
+				#CurrentGameBoard[int(position)-1].UserID = ""
 				# call another function. that sets its game board. 
-				lock.release()
+				#lock.release()
 				 # disbale the color for all other users
 				# that user though does not get diabled
 
