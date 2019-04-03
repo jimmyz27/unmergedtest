@@ -156,7 +156,7 @@ def sendConstantUpdatesToClient(conn,ip,port):
 			global CurrentGameBoard
 			gameStateMessage = {"gameBoard":CurrentGameBoard}
 			#sleep the same as client send to send to all clients. 
-			time.sleep(0.2)
+			time.sleep(0.1)
 			data = pickle.dumps(gameStateMessage)
 			conn.send(data)
 			#print("size of server data", str(sys.getsizeof(pickle.dumps(gameStateMessage))))
@@ -172,12 +172,14 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 				data = pickle.loads(data)
 				print("serverRecievedData",data)
 				if ("gameState" in data):
-					message = GameStateObj()
+					#message = GameStateObj()
 					Message = data["gameState"]
 					print ("Server received data:",Message.color, Message.canvasNumber)
 					lock.acquire()
 					CurrentGameBoard[int(Message.canvasNumber)-1].color = Message.color
 					CurrentGameBoard[int(Message.canvasNumber)-1].UserID = Message.UserID
+					CurrentGameBoard[int(Message.canvasNumber)-1].state = Message.state
+					sleep(0.1)
 					canvasList[int(Message.canvasNumber)-1].config(background = Message.color,state = Message.state)
 					# if not user update
 					lock.release()
@@ -287,7 +289,7 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 2
+			number = 1
 			
 			global firstConnection
 			if (not firstConnection):
