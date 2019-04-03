@@ -15,7 +15,7 @@ from time import sleep
 import random
 import sys
  
- 
+global penWidth, filledThreshold, rows
 squareSize = 50
 penWidth = 0
 img = Image.new('1', (squareSize, squareSize), 0)  
@@ -315,19 +315,20 @@ def TurnClientIntoServer():
 			global penWidth,rows,filledThreshold,myUserID
 			ownIP = socket.gethostbyname(socket.gethostname())
 			#inpput here
-			print("Enter Pen width(1-10)")
+			#print("Enter Pen width(1-10)")
 			#inPenwidth = input()
 
-			penWidth = 10
+			#penWidth = 10
 
-			print("Enter ")
+			#print("Enter ")
 			
-			rows = 6
-			filledThreshold = 25
+			#rows = 6
+			#filledThreshold = 25
 			
 			myUserID =0
+
 			toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
-		   
+
 			print(rows)
 			print(penWidth)
 			print(filledThreshold)
@@ -525,8 +526,24 @@ Server = input()
 
 
 if(Server=="yes"):
+	#global penWidth,rows,filledThreshold
 	isServer = True
 	startLock.acquire()
+	print("Deny and conquer configuring settings")
+ 
+	print("pen width")
+	INpenWidth = input()
+	print("rows:")
+	InRows = input()
+	print("filled percent")
+	INfilledThreshold = input()
+
+	penWidth = int(INpenWidth)
+	rows = int(InRows)
+	filledThreshold = int(INfilledThreshold)
+
+	#set input settings here. 
+	#set global settings here.
 	
 else:
 	isServer = False
@@ -534,6 +551,11 @@ else:
 countNumber = 0
 
 if (not isServer):
+	#input Ip
+	#
+	print("enter Servers IP:")
+	#IP = input()
+
 	#IPList.append('192.168.0.10')
 	IPList.append(socket.gethostname())
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
