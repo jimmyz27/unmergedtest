@@ -1,4 +1,3 @@
-
 import socket 
 from tkinter import *
 import numpy as np
@@ -50,6 +49,8 @@ global lock
 global IPList
 global startLock
 global ReceiveQueue
+global genesis
+global rtt 
 ReceiveQueue = []
 notConnected = True
 
@@ -123,7 +124,8 @@ def PriorityServerUpdate(gameStateDict):
 
  
 	 
-				
+					
+
 
 def HandleReconnectToAnotherServer():
 	global tcpClientA
@@ -135,6 +137,7 @@ def HandleReconnectToAnotherServer():
 	
 		if(notConnected):
 			if(IPList[0]!= (socket.gethostbyname(socket.gethostname()))):
+				# check ip list vs your own ip
 				try:
 					print("checking for old socket")
 					if(socketUseList):
@@ -157,7 +160,8 @@ def HandleReconnectToAnotherServer():
 					tcpClientA.settimeout(5)
 
 					tcpClientA.connect((host, port))
-					print("after connect client")
+					print("Connected. Establishing rtt")
+					calculateRTT(tcpClientA)
 					socketUseList.append(tcpClientA)
 					syncLock.release()
 					print("should be connect")
@@ -198,13 +202,14 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 	while True : 
 			try:
 				data = conn.recv(20000) 
-
 				#check that field other wise.
 				data = pickle.loads(data)
 				#print("serverRecievedData",data)
 				if ("gameState" in data):
 					#message = GameStateObj()
 					Message = data["gameState"]
+					print( "Client time is " +  data["Time"] ) 
+
 					print ("Server received data:",Message.color, Message.canvasNumber,Message.UserID)
 					if(Message.color=="yellow" and Message.state == "disabled"):
 						ReceiveQueue.append(data)
@@ -260,6 +265,7 @@ class UpdateClientFromServer(threading.Thread):
 		global tcpClientA
 		global CurrentGameBoard
 		global IPList,penWidth,rows,filledThreshold,myUserID
+		global genesis
 
 		while True :  
 			try:
@@ -268,7 +274,6 @@ class UpdateClientFromServer(threading.Thread):
 					print("firstConnection")
 					firstConnection = False
 				data = tcpClientA.recv(10000)
-
 				data = pickle.loads(data)
 			
 				if("gameBoard" in data):
@@ -288,6 +293,8 @@ class UpdateClientFromServer(threading.Thread):
 
 	
 				elif( "initialise" in data):
+
+					genesis = time.time()
 					
 					print("initialise", data)
 					IPList = data["IPList"]
@@ -322,10 +329,11 @@ class UpdateClientFromServer(threading.Thread):
 
 			   
 
+		
 
 def TurnClientIntoServer():
 	print("entering while loops")
-	global isServer
+	global isServer,firstConnection
 	while(True):
 		serverLock.acquire()
 		print("in while lock aquired")
@@ -362,6 +370,7 @@ def TurnClientIntoServer():
 					print ("Multithreaded Python server : Waiting for connections from TCP clients..." )
 					(conn,(ip,port)) = tcpServer.accept() 
 					try:
+						calculateRTT(conn)
 						_thread.start_new_thread(ReceiveUpdatesFromClient,(conn,ip,port,))
 						_thread.start_new_thread(sendConstantUpdatesToClient,(conn,ip,port,))
 						print("newConnection")
@@ -373,7 +382,7 @@ def TurnClientIntoServer():
 
 		if(isServer):
 			print("sending initiliaze data")
-			global penWidth,rows,filledThreshold,myUserID
+			global penWidth,rows,filledThreshold,myUserID, genesis
 			ownIP = socket.gethostbyname(socket.gethostname())
 			#inpput here
 			#print("Enter Pen width(1-10)")
@@ -385,22 +394,22 @@ def TurnClientIntoServer():
 			
 			#rows = 6
 			#filledThreshold = 25
-			#my connection.
-			# 
-			#if(firstConnection): for fault tolerance
+			genesis = time.time()
+			#if(firstConnection):
 			myUserID =0
 
 			toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
-
 			print(rows)
 			print(penWidth)
 			print(filledThreshold)
-
 			for i in range (len(ConnectionList)):#len(IPList):
-				toSend.update({"UserID":i+1})
+				if(firstConnection):
+					toSend.update({"UserID":i+1})
 				ConnectionList[i].send(pickle.dumps(toSend))
-				del toSend["UserID"]
-			startLock.release()
+				if(firstConnection):
+					del toSend["UserID"]
+			if(firstConnection):
+				startLock.release()
 			break
 '''
 		if(isServer):
@@ -414,7 +423,19 @@ def TurnClientIntoServer():
 	   
 		#threads.append(newthread)
 		
- 
+def calculateRTT(conn):
+	global rtt
+	global isServer
+	if(isServer): 
+		conn.send(b'DEADBEEF')
+	else:
+		currTime = time.time()
+		conn.recv(1024)
+		afterTime = time.time()
+		elapsedTime = afterTime - currTime
+		rtt = elapsedTime / 2
+		print("My RTT is : " + str(rtt))
+		
 def PositionIntoIndex(position):
 	columnNumber = position %rows
 	rowNumber = position//rows
@@ -445,7 +466,7 @@ def xy(event):
 			ServerSquareState.state = "disabled"
 			ServerSquareState.canvasNumber = position
 			ServerSquareState.UserID = myUserID
-			currentTime = time.time()
+			currentTime = time.time() - genesis
 			#add some delay time aswell. 
 			message = {"gameState":ServerSquareState,"Time":currentTime}
 			PriorityServerUpdate(message)
@@ -462,7 +483,7 @@ def xy(event):
 			SquareState.state = "disabled"
 			SquareState.canvasNumber = position
 			SquareState.UserID = myUserID
-			currentTime = time.time()
+			currentTime = time.time() - genesis - rtt
 			# time stamp for yellow
 			message = {"gameState":SquareState,"Time":currentTime}
 			data = pickle.dumps(message)
@@ -501,6 +522,7 @@ def addLine(event):
 def doneStroke(event):
 	if event.widget.cget('state') != 'disabled':
 		
+
 		#DEBUG - Picks a random color to set the BG   
 		#Clears all the drawing inside the Canvas
 		global SquareState
@@ -510,7 +532,6 @@ def doneStroke(event):
 		percentFilled = np.count_nonzero(output)/pixels
 		percentFilledString = str(int(round(percentFilled*100, 0)))
 		print("Percent Filled: " + percentFilledString)
-
 		#percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
 		#mouseEventList.clear()
 
@@ -538,6 +559,7 @@ def doneStroke(event):
 
 			color = colors[int(myUserID)%4]
 			#event.widget.config(bg=color, state="disabled")
+
 			percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
 			mouseEventList.clear()
 
@@ -646,9 +668,8 @@ if (not isServer):
 	#
 	print("enter Servers IP:")
 	#IP = input()
-
 	#IPList.append('192.168.0.10')
-	IPList.append(socket.gethostname())
+	IPList.append("207.23.176.85")
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
 	UpdateBoard.start()
@@ -681,14 +702,3 @@ startLock.release()
 
 print(window.grid_size())
 window.mainloop()
- 
- 
- 
-
-
-
-
-
-
-
-
