@@ -179,7 +179,7 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 					CurrentGameBoard[int(Message.canvasNumber)-1].color = Message.color
 					CurrentGameBoard[int(Message.canvasNumber)-1].UserID = Message.UserID
 					CurrentGameBoard[int(Message.canvasNumber)-1].state = Message.state
-					sleep(0.1)
+					#sleep(0.1)
 					canvasList[int(Message.canvasNumber)-1].config(background = Message.color,state = Message.state)
 					# if not user update
 					lock.release()
