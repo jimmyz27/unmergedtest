@@ -84,20 +84,44 @@ def getFastestUser(queue):
 
 class GameStateObj:
 	color = ""
-	name = ""
 	canvasNumber = 0
-	percentageComplete = 0
-	rowIndex = 0
-	columnIndex = 0
 	state ="Normal"
 	UserID = ""
 
   
 SquareState = GameStateObj()
+ServerSquareState =  GameStateObj()
 
-def UpdateCanvasColorUser(position,color,state):
-	print("updating server colors")
-	canvasList[int(position)-1].config(background = color,state = state)
+def PriorityServerUpdate(gameStateDict):
+	if ("gameState" in gameStateDict):
+		#message = GameStateObj()
+		Message = gameStateDict["gameState"]
+		print ("Server received data:",Message.color, Message.canvasNumber,Message.UserID)
+		if(Message.color=="yellow" and Message.state == "disabled"):
+			ReceiveQueue.append(gameStateDict)
+			priorityValue = getFastestUser(ReceiveQueue)
+			ReceiveQueue.remove(priorityValue)
+			priorityState = priorityValue["gameState"]
+			if(CurrentGameBoard[int(priorityState.canvasNumber)-1].state !="disabled"):
+				lock.acquire()
+				print("priority queue processed Server:",priorityState.UserID)
+				CurrentGameBoard[int(priorityState.canvasNumber)-1].color = priorityState.color
+				CurrentGameBoard[int(priorityState.canvasNumber)-1].UserID = priorityState.UserID
+				CurrentGameBoard[int(priorityState.canvasNumber)-1].state = priorityState.state
+				canvasList[int(priorityState.canvasNumber)-1].config(background = priorityState.color,state = priorityState.state)
+				lock.release()
+		else:
+			lock.acquire()
+			print("direct Updating value for Server",Message.UserID)
+			CurrentGameBoard[int(Message.canvasNumber)-1].color = Message.color
+			CurrentGameBoard[int(Message.canvasNumber)-1].UserID = Message.UserID
+			CurrentGameBoard[int(Message.canvasNumber)-1].state = Message.state
+			canvasList[int(Message.canvasNumber)-1].config(background = Message.color,state = Message.state)
+			lock.release()
+		
+
+ 
+	 
 					
 
 
