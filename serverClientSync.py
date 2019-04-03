@@ -208,7 +208,7 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 				if ("gameState" in data):
 					#message = GameStateObj()
 					Message = data["gameState"]
-					print( "Client time is " +  data["Time"] ) 
+					#print( "Client time is " +  str(data["Time"]) ) 
 
 					print ("Server received data:",Message.color, Message.canvasNumber,Message.UserID)
 					if(Message.color=="yellow" and Message.state == "disabled"):
@@ -333,7 +333,7 @@ class UpdateClientFromServer(threading.Thread):
 
 def TurnClientIntoServer():
 	print("entering while loops")
-	global isServer,firstConnection
+	global isServer
 	while(True):
 		serverLock.acquire()
 		print("in while lock aquired")
@@ -356,7 +356,7 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 2
+			number = 1
 			
 			global firstConnection
 			if (not firstConnection):
@@ -394,22 +394,20 @@ def TurnClientIntoServer():
 			
 			#rows = 6
 			#filledThreshold = 25
-			genesis = time.time()
-			#if(firstConnection):
+			
 			myUserID =0
 
 			toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
+			genesis = time.time()
 			print(rows)
 			print(penWidth)
 			print(filledThreshold)
+	 
 			for i in range (len(ConnectionList)):#len(IPList):
-				if(firstConnection):
-					toSend.update({"UserID":i+1})
+				toSend.update({"UserID":i+1})
 				ConnectionList[i].send(pickle.dumps(toSend))
-				if(firstConnection):
-					del toSend["UserID"]
-			if(firstConnection):
-				startLock.release()
+				del toSend["UserID"]
+			startLock.release()
 			break
 '''
 		if(isServer):
@@ -669,7 +667,7 @@ if (not isServer):
 	print("enter Servers IP:")
 	#IP = input()
 	#IPList.append('192.168.0.10')
-	IPList.append("207.23.176.85")
+	IPList.append("207.23.181.250")
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
 	UpdateBoard.start()
