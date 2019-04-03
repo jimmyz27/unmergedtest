@@ -49,6 +49,8 @@ global serverLock
 global lock
 global IPList
 global startLock
+global ReceiveQueue
+ReceiveQueue = []
 notConnected = True
 
 firstConnection = True
@@ -61,7 +63,6 @@ IPList = []
 socketUseList = []
 colors = ["red","green","blue","black"]
 
-
 #IPList.append ('192.168.0.17')
 ConnectionList = []
 serverLock = threading.BoundedSemaphore(value=1)
@@ -69,18 +70,17 @@ reconnectLock = threading.BoundedSemaphore(value=1)
 
 syncLock = threading.BoundedSemaphore(value=1)
 startLock = threading.BoundedSemaphore(value=1)
- # try to connect to the new server here 
-				# if success close the previous, 
-				# reset a socket to anotehr ip.
-				# close the preious                     
+ 
+def getFastestUser(queue):
+	fastest = 0
+	for i in range(len(queue)):
+		if(queue[i]["Time"]< queue[fastest]["Time"]):
+			fastest = i
+	return queue[fastest]
 
-				# check the top of the list
-				# if its me set me to it. 
-				# if not ping that list guy. 
-				# then update your list status to that guy as the server
-				# 
-				# if unreachable delete him
-				# try with the next guy in the list. 
+ 
+
+
 
 class GameStateObj:
 	color = ""
@@ -95,8 +95,12 @@ class GameStateObj:
   
 SquareState = GameStateObj()
 
+def UpdateCanvasColorUser(position,color,state):
+	print("updating server colors")
+	canvasList[int(position)-1].config(background = color,state = state)
+					
 
-	 
+
 def HandleReconnectToAnotherServer():
 	global tcpClientA
 	global IPList
@@ -161,36 +165,57 @@ def sendConstantUpdatesToClient(conn,ip,port):
 			conn.send(data)
 			#print("size of server data", str(sys.getsizeof(pickle.dumps(gameStateMessage))))
 			
-
+#def server insert
+# 	insert into the queue with time stamp delay. 
 
  
 def ReceiveUpdatesFromClient(conn,ip,port): 
+	global ReceiveQueue
 	while True : 
 			try:
 				data = conn.recv(20000) 
 				#check that field other wise.
 				data = pickle.loads(data)
-				print("serverRecievedData",data)
+				#print("serverRecievedData",data)
 				if ("gameState" in data):
 					#message = GameStateObj()
 					Message = data["gameState"]
-					print ("Server received data:",Message.color, Message.canvasNumber)
+					print ("Server received data:",Message.color, Message.canvasNumber,Message.UserID)
+					if(Message.color=="yellow" and Message.state == "disabled"):
+						ReceiveQueue.append(data)
+						priorityValue = getFastestUser(ReceiveQueue)
+						ReceiveQueue.remove(priorityValue)
+						priorityState = priorityValue["gameState"]
+						if(CurrentGameBoard[int(priorityState.canvasNumber)-1].state !="disabled"):
+							lock.acquire()
+							print("priority queue processed user:",priorityState.UserID)
+							CurrentGameBoard[int(priorityState.canvasNumber)-1].color = priorityState.color
+							CurrentGameBoard[int(priorityState.canvasNumber)-1].UserID = priorityState.UserID
+							CurrentGameBoard[int(priorityState.canvasNumber)-1].state = priorityState.state
+							canvasList[int(priorityState.canvasNumber)-1].config(background = priorityState.color,state = priorityState.state)
+							lock.release()
 
-					#check if request
-					# lock, 
-					# check if met, 
-					# fill in yellow
-					# done fill in c
-					lock.acquire()
-					# first check if server has aquired this message. if so don't let client do anyhting
-					# also if from server sleep 
-					CurrentGameBoard[int(Message.canvasNumber)-1].color = Message.color
-					CurrentGameBoard[int(Message.canvasNumber)-1].UserID = Message.UserID
-					CurrentGameBoard[int(Message.canvasNumber)-1].state = Message.state
-					#sleep(0.1)
-					canvasList[int(Message.canvasNumber)-1].config(background = Message.color,state = Message.state)
-					# if not user update
-					lock.release()
+					#	get highest yellow item insert
+					# 	current gaem board set 
+					#else:
+					#  if color not yellow and disabled.
+					# set the color. 
+					#add to queue
+					# take out smallest time stamp. 
+					##here have a sorted priority queue based on time. 
+					# server has its own function to add to this queue
+					# here we process the queue. and set the canvas board based on prioity
+					# average send time. 
+					#
+					#get highest priority. 
+					else:
+						lock.acquire()
+						print("direct Updating value for User",Message.UserID)
+						CurrentGameBoard[int(Message.canvasNumber)-1].color = Message.color
+						CurrentGameBoard[int(Message.canvasNumber)-1].UserID = Message.UserID
+						CurrentGameBoard[int(Message.canvasNumber)-1].state = Message.state
+						canvasList[int(Message.canvasNumber)-1].config(background = Message.color,state = Message.state)
+						lock.release()
 			
 			except Exception as e: 
 				print(e)
@@ -253,7 +278,7 @@ class UpdateClientFromServer(threading.Thread):
 					print("UserID received",myUserID)
 					startLock.release()
 				
-				
+			#TODO:change test general exception. 
 			except socket.timeout:
 			 
 				global notConnected
@@ -297,7 +322,7 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 1
+			number = 2
 			
 			global firstConnection
 			if (not firstConnection):
@@ -384,7 +409,11 @@ def xy(event):
 		print("Position", position)
 		if (isServer):
 			lock.acquire()
-
+			#buffer system to check the times, then if that time is
+			# smallest then set it, 
+			# other wise, dont
+			# server buffer time is added some delay. 
+			currentTime = time.time()
 			CurrentGameBoard[int(position)-1].color = "yellow" 
 			CurrentGameBoard[int(position)-1].state = "disabled"
 			CurrentGameBoard[int(position)-1].UserID = myUserID
@@ -396,7 +425,9 @@ def xy(event):
 			SquareState.state = "disabled"
 			SquareState.canvasNumber = position
 			SquareState.UserID = myUserID
-			message = {"gameState":SquareState}
+			currentTime = time.time()
+			# time stamp for yellow
+			message = {"gameState":SquareState,"Time":currentTime}
 			data = pickle.dumps(message)
    
 			tcpClientA.send(data) 
@@ -469,7 +500,7 @@ def doneStroke(event):
 		if (int(percentFilledString)> int(filledThreshold)):
 
 			color = colors[int(myUserID)%4]
-			event.widget.config(bg=color, state="disabled")
+			#event.widget.config(bg=color, state="disabled")
 
 			percentFilledChecker.rectangle((0,0,squareSize,squareSize), fill=0)
 			mouseEventList.clear()
@@ -486,6 +517,7 @@ def doneStroke(event):
 				SquareState.state = "disabled"
 				SquareState.canvasNumber = position
 				SquareState.UserID = myUserID
+				
 				message = {"gameState":SquareState}
 				data = pickle.dumps(message)
 				tcpClientA.send(data) 
@@ -503,7 +535,7 @@ def doneStroke(event):
 				CurrentGameBoard[int(position)-1].color = "grey" 
 				CurrentGameBoard[int(position)-1].state = "normal"
 				CurrentGameBoard[int(position)-1].UserID = ""
-
+				# call another function. that sets its game board. 
 				lock.release()
 				 # disbale the color for all other users
 				# that user though does not get diabled
