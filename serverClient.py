@@ -175,7 +175,15 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 					#message = GameStateObj()
 					Message = data["gameState"]
 					print ("Server received data:",Message.color, Message.canvasNumber)
+
+					#check if request
+					# lock, 
+					# check if met, 
+					# fill in yellow
+					# done fill in c
 					lock.acquire()
+					# first check if server has aquired this message. if so don't let client do anyhting
+					# also if from server sleep 
 					CurrentGameBoard[int(Message.canvasNumber)-1].color = Message.color
 					CurrentGameBoard[int(Message.canvasNumber)-1].UserID = Message.UserID
 					CurrentGameBoard[int(Message.canvasNumber)-1].state = Message.state
