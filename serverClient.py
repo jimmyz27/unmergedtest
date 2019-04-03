@@ -93,7 +93,7 @@ SquareState = GameStateObj()
 ServerSquareState =  GameStateObj()
 
 def PriorityServerUpdate(gameStateDict):
-	global ReceiveQueue
+	global ReceiveQueue,CurrentGameBoard
 	if ("gameState" in gameStateDict):
 		#message = GameStateObj()
 		Message = gameStateDict["gameState"]
@@ -112,13 +112,13 @@ def PriorityServerUpdate(gameStateDict):
 				#canvasList[int(priorityState.canvasNumber)-1].config(background = priorityState.color,state = priorityState.state)
 				#lock.release()
 		else:
-			lock.acquire()
+			#lock.acquire()
 			print("direct Updating value for Server",Message.UserID)
 			CurrentGameBoard[int(Message.canvasNumber)-1].color = Message.color
 			CurrentGameBoard[int(Message.canvasNumber)-1].UserID = Message.UserID
 			CurrentGameBoard[int(Message.canvasNumber)-1].state = Message.state
 			canvasList[int(Message.canvasNumber)-1].config(background = Message.color,state = Message.state)
-			lock.release()
+			#lock.release()
 		
 
  
@@ -212,13 +212,14 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 						ReceiveQueue.remove(priorityValue)
 						priorityState = priorityValue["gameState"]
 						if(CurrentGameBoard[int(priorityState.canvasNumber)-1].state !="disabled"):
-							lock.acquire()
+							lock.acquire()# be careful of these locks!
 							print("priority queue processed user:",priorityState.UserID)
 							CurrentGameBoard[int(priorityState.canvasNumber)-1].color = priorityState.color
 							CurrentGameBoard[int(priorityState.canvasNumber)-1].UserID = priorityState.UserID
 							CurrentGameBoard[int(priorityState.canvasNumber)-1].state = priorityState.state
 							canvasList[int(priorityState.canvasNumber)-1].config(background = priorityState.color,state = priorityState.state)
-							lock.release()
+							lock.release()# seems like we don't need them
+							# further testing required.
 
 					#	get highest yellow item insert
 					# 	current gaem board set 
