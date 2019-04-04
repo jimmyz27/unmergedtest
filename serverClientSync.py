@@ -6,7 +6,6 @@ from PIL import ImageDraw
 import _thread
 import pickle
 import threading
-import errno
 # Multithreaded Python server : TCP Server Socket Thread Pool
 #
 import time
@@ -133,7 +132,7 @@ def HandleReconnectToAnotherServer():
 	global IPList
 	global notConnected
 	while (True):
-		print("current IP list ",IPList)
+		print("tryng to connect to ",IPList)
 		reconnectLock.acquire()
 	
 		if(notConnected):
@@ -144,11 +143,11 @@ def HandleReconnectToAnotherServer():
 					if(socketUseList):
 						print("oldSocket found and pop")
 						oldSocket = socketUseList.pop()
-						#oldSocket.shutdown(socket.SHUT_RDWR)
+						oldSocket.shutdown(socket.SHUT_RDWR)
 						oldSocket.close()
 
 					time.sleep(4.0)
-					print("Current IP list",IPList)
+					print("tryng to connect to ",IPList)
 					print("first value is ", IPList[0])
 					host = IPList[0]
 					IPList.remove(host)
@@ -250,7 +249,8 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 						lock.release()
 			
 			except Exception as e: 
-				print("receive from client exception",e)
+				print("receive update from client exception",e)
+				pass
 
 			
 			
@@ -298,7 +298,6 @@ class UpdateClientFromServer(threading.Thread):
 					genesis = time.time()
 					
 					print("initialise", data)
-				 
 					IPList = data["IPList"]
 					print("IpListRecieved",IPList)
 
@@ -310,29 +309,22 @@ class UpdateClientFromServer(threading.Thread):
 
 					filledThreshold = data["threshold"]
 					print("Threshold received",filledThreshold)
-				 
 					myUserID = data["UserID"]
 					print("UserID received",myUserID)
-
-				 
 					startLock.release()
 				
 			#TODO:change test general exception. 
-
-			#except socket.timeout:
-			except EOFError as e:
-				print("Update from client Exception",e)
+			except socket.timeout:
 			 
 				global notConnected
 				global reconnectLock
-				print("exception",e)
 				reconnectLock.release()
 				notConnected = True
 				print("reconnecting to next Server")
 				pass
 
 			except Exception as e:
-				#print(e)
+				print("update client from server exception",e)
 				pass
 					
 
@@ -349,11 +341,11 @@ def TurnClientIntoServer():
 		print("isServer",isServer)
 		if(isServer):
 			print("isServer is true in if statement")
-			 
+			print("checking for old socket")
 			if(socketUseList):
 				print("oldSocket found and pop")
 				oldSocket = socketUseList.pop()
-				#oldSocket.shutdown(socket.SHUT_RDWR)
+				oldSocket.shutdown(socket.SHUT_RDWR)
 				oldSocket.close()
 
 			TCP_IP = '0.0.0.0' 
@@ -391,7 +383,7 @@ def TurnClientIntoServer():
 
 		if(isServer):
 			print("sending initiliaze data")
-			global penWidth,rows,filledThreshold,myUserID, genesis 
+			global penWidth,rows,filledThreshold,myUserID, genesis
 			ownIP = socket.gethostbyname(socket.gethostname())
 			#inpput here
 			#print("Enter Pen width(1-10)")
@@ -404,17 +396,15 @@ def TurnClientIntoServer():
 			#rows = 6
 			#filledThreshold = 25
 			genesis = time.time()
-			 
-			print("Server firstConnection",firstConnection)
 			if(firstConnection):
 				myUserID =0
 
 				toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
-			
+				
 				print(rows)
 				print(penWidth)
 				print(filledThreshold)
-	 
+		
 				for i in range (len(ConnectionList)):#len(IPList):
 					toSend.update({"UserID":i+1})
 					ConnectionList[i].send(pickle.dumps(toSend))
@@ -469,7 +459,9 @@ def xy(event):
 		if (isServer):
 			#lock.acquire()
 			#buffer system to check the times, then if that time is
-		 
+			# smallest then set it, 
+			# other wise, dont
+			# server buffer time is added some delay. 
 			ServerSquareState.color = "yellow"
 			ServerSquareState.state = "disabled"
 			ServerSquareState.canvasNumber = position
@@ -676,10 +668,9 @@ if (not isServer):
 	#
 	print("enter Servers IP:")
 	#IP = input()
-	#IPList.append('192.168.0.10')
-
 	IPList.append(socket.gethostname())
-
+	#IPList.append('192.168.0.10')
+	#IPList.append("207.23.181.250")
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
 	UpdateBoard.start()
