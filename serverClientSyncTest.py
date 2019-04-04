@@ -188,7 +188,7 @@ def sendConstantUpdatesToClient(conn,ip,port):
 			global CurrentGameBoard
 			gameStateMessage = {"gameBoard":CurrentGameBoard}
 			#sleep the same as client send to send to all clients. 
-			time.sleep(0.2)
+			time.sleep(0.1)
 			data = pickle.dumps(gameStateMessage)
 			conn.send(data)
 			#print("size of server data", str(sys.getsizeof(pickle.dumps(gameStateMessage))))
@@ -247,6 +247,8 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 						CurrentGameBoard[int(Message.canvasNumber)-1].state = Message.state
 						canvasList[int(Message.canvasNumber)-1].config(background = Message.color,state = Message.state)
 						lock.release()
+				elif("Alive" in data):
+					continue
 			
 			except Exception as e: 
 				print("receive update from client exception",e)
@@ -325,7 +327,6 @@ class UpdateClientFromServer(threading.Thread):
 
 			except Exception as e:
 				print("update client from server exception",e)
-				#sleep(5)
 				pass
 					
 
@@ -517,6 +518,23 @@ def addLine(event):
 		AreaList = list(set(AreaList))
 
 
+def checkIfServerAlive(socket):
+	message = {"Alive":1}
+	while (True):
+		time.sleep(4)
+		try:
+			data = pickle.dumps(message)
+			socket.send(data)
+		
+		except Exception as e:
+			print("could not connect to server",e)
+			global notConnected
+			global reconnectLock
+			reconnectLock.release()
+			notConnected = True
+			print("reconnecting to next Server")
+			pass
+
 
 
 
@@ -669,8 +687,8 @@ if (not isServer):
 	#
 	print("enter Servers IP:")
 	#IP = input()
-	IPList.append(socket.gethostname())
-	#IPList.append('192.168.0.10')
+	#IPList.append(socket.gethostname())
+	IPList.append('192.168.0.12')
 	#IPList.append("207.23.181.250")
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
