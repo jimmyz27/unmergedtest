@@ -140,11 +140,11 @@ def HandleReconnectToAnotherServer():
 				# check ip list vs your own ip
 				try:
 					print("checking for old socket")
-					if(socketUseList):
-						print("oldSocket found and pop")
-						oldSocket = socketUseList.pop()
-						oldSocket.shutdown(socket.SHUT_RDWR)
-						oldSocket.close()
+					#if(socketUseList):
+						# print("oldSocket found and pop")
+						# oldSocket = socketUseList.pop()
+						# oldSocket.shutdown(socket.SHUT_RDWR)
+						# oldSocket.close()
 
 					time.sleep(4.0)
 					print("tryng to connect to ",IPList)
@@ -248,6 +248,7 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 						canvasList[int(Message.canvasNumber)-1].config(background = Message.color,state = Message.state)
 						lock.release()
 				elif("Alive" in data):
+					print("Alive")
 					continue
 			
 			except Exception as e: 
@@ -326,7 +327,7 @@ class UpdateClientFromServer(threading.Thread):
 				pass
 
 			except Exception as e:
-				print("update client from server exception",e)
+				#print("update client from server exception",e)
 				pass
 					
 
@@ -344,11 +345,11 @@ def TurnClientIntoServer():
 		if(isServer):
 			print("isServer is true in if statement")
 			print("checking for old socket")
-			if(socketUseList):
-				print("oldSocket found and pop")
-				oldSocket = socketUseList.pop()
-				oldSocket.shutdown(socket.SHUT_RDWR)
-				oldSocket.close()
+			#if(socketUseList):
+				# print("oldSocket found and pop")
+				# oldSocket = socketUseList.pop()
+				# oldSocket.shutdown(socket.SHUT_RDWR)
+				# oldSocket.close()
 
 			TCP_IP = '0.0.0.0' 
 			TCP_PORT = 2008
@@ -518,22 +519,23 @@ def addLine(event):
 		AreaList = list(set(AreaList))
 
 
-def checkIfServerAlive(socket):
+def checkIfServerAlive():
 	global tcpClientA
 	message = {"Alive":1}
 	while (True):
 		time.sleep(4)
+		print()
 		try:
 			data = pickle.dumps(message)
 			tcpClientA.send(data)
 		
 		except Exception as e:
-			print("could not connect to server",e)
+			print("Server down",e)
 			global notConnected
 			global reconnectLock
 			reconnectLock.release()
 			notConnected = True
-			print("reconnecting to next Server")
+			print("handling disconnect")
 			pass
 
 
@@ -696,7 +698,7 @@ if (not isServer):
 	UpdateBoard.start()
 	startLock.acquire()
 	sleep(1)
-	_thread.start_new_thread(checkIfServerAlive)
+	_thread.start_new_thread(checkIfServerAlive,())
 
 	#start thread here
 
