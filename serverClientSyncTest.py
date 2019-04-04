@@ -131,7 +131,7 @@ def HandleReconnectToAnotherServer():
 	global IPList
 	global notConnected
 	while (True):
-		print("tryng to connect to ",IPList)
+		print("Current IP list ",IPList)
 		reconnectLock.acquire()
 	
 		if(notConnected):
@@ -165,7 +165,7 @@ def HandleReconnectToAnotherServer():
 					syncLock.release()
 					print("should be connect")
 					notConnected = False
-				
+				    
 				except Exception as e:  
 					print("unable to connect",e)
 					notConnected = True
@@ -359,12 +359,15 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 3
-			 
+			number = 2
+			print("Len IPList",len(IPList))
+			
 			global firstConnection
 			if (not firstConnection):
 				print("not first connection")
+				print("IP list is",IPList)
 				#len of the IP list now for that many clients. 
+				#number = int(len(IPList)) -1
 				number = number -1
 
 
@@ -523,22 +526,23 @@ def checkIfServerAlive():
 	global tcpClientA, isServer
 	message = {"Alive":1}
 	while (True):
+		
 		if(isServer):
 			break
 		time.sleep(4)
-		print()
-		try:
-			data = pickle.dumps(message)
-			tcpClientA.send(data)
-		
-		except Exception as e:
-			print("Server down",e)
-			global notConnected
-			global reconnectLock
-			reconnectLock.release()
-			notConnected = True
-			print("handling disconnect")
-			pass
+		if(tcpClientA):
+			try:
+				data = pickle.dumps(message)
+				tcpClientA.send(data)
+			
+			except Exception as e:
+				print("Server down",e)
+				global notConnected
+				global reconnectLock
+				reconnectLock.release()
+				notConnected = True
+				print("handling disconnect")
+				pass
 
 
 
