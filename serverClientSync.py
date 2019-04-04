@@ -297,6 +297,7 @@ class UpdateClientFromServer(threading.Thread):
 					genesis = time.time()
 					
 					print("initialise", data)
+				 
 					IPList = data["IPList"]
 					print("IpListRecieved",IPList)
 
@@ -308,8 +309,11 @@ class UpdateClientFromServer(threading.Thread):
 
 					filledThreshold = data["threshold"]
 					print("Threshold received",filledThreshold)
+				 
 					myUserID = data["UserID"]
 					print("UserID received",myUserID)
+
+				 
 					startLock.release()
 				
 			#TODO:change test general exception. 
@@ -340,7 +344,7 @@ def TurnClientIntoServer():
 		print("isServer",isServer)
 		if(isServer):
 			print("isServer is true in if statement")
-			print("checking for old socket")
+			 
 			if(socketUseList):
 				print("oldSocket found and pop")
 				oldSocket = socketUseList.pop()
@@ -356,7 +360,7 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 1
+			number = 2
 			
 			global firstConnection
 			if (not firstConnection):
@@ -382,7 +386,7 @@ def TurnClientIntoServer():
 
 		if(isServer):
 			print("sending initiliaze data")
-			global penWidth,rows,filledThreshold,myUserID, genesis
+			global penWidth,rows,filledThreshold,myUserID, genesis 
 			ownIP = socket.gethostbyname(socket.gethostname())
 			#inpput here
 			#print("Enter Pen width(1-10)")
@@ -394,21 +398,26 @@ def TurnClientIntoServer():
 			
 			#rows = 6
 			#filledThreshold = 25
-			
-			myUserID =0
-
-			toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
 			genesis = time.time()
-			print(rows)
-			print(penWidth)
-			print(filledThreshold)
+			 
+			print("Server firstConnection",firstConnection)
+			if(firstConnection):
+				myUserID =0
+
+				toSend = {"initialise":1,"IPList":IPList,"Penwidth":penWidth,"rows":rows,"threshold":filledThreshold}
+			
+				print(rows)
+				print(penWidth)
+				print(filledThreshold)
 	 
-			for i in range (len(ConnectionList)):#len(IPList):
-				toSend.update({"UserID":i+1})
-				ConnectionList[i].send(pickle.dumps(toSend))
-				del toSend["UserID"]
-			startLock.release()
-			break
+				for i in range (len(ConnectionList)):#len(IPList):
+					toSend.update({"UserID":i+1})
+					ConnectionList[i].send(pickle.dumps(toSend))
+					del toSend["UserID"]
+
+				
+				startLock.release()
+				break
 '''
 		if(isServer):
 			ownIP = socket.gethostbyname(socket.gethostname())
@@ -667,7 +676,9 @@ if (not isServer):
 	print("enter Servers IP:")
 	#IP = input()
 	#IPList.append('192.168.0.10')
-	IPList.append("207.23.181.250")
+
+	IPList.append(socket.gethostname())
+
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
 	UpdateBoard.start()
