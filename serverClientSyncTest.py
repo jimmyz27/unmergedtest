@@ -519,12 +519,13 @@ def addLine(event):
 
 
 def checkIfServerAlive(socket):
+	global tcpClientA
 	message = {"Alive":1}
 	while (True):
 		time.sleep(4)
 		try:
 			data = pickle.dumps(message)
-			socket.send(data)
+			tcpClientA.send(data)
 		
 		except Exception as e:
 			print("could not connect to server",e)
@@ -687,13 +688,15 @@ if (not isServer):
 	#
 	print("enter Servers IP:")
 	#IP = input()
-	#IPList.append(socket.gethostname())
-	IPList.append('192.168.0.12')
+	IPList.append(socket.gethostname())
+	#IPList.append('192.168.0.12')
 	#IPList.append("207.23.181.250")
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
 	UpdateBoard = UpdateClientFromServer()
 	UpdateBoard.start()
 	startLock.acquire()
+	sleep(1)
+	_thread.start_new_thread(checkIfServerAlive)
 
 	#start thread here
 
