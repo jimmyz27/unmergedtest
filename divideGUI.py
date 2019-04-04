@@ -6,6 +6,7 @@ from PIL import ImageDraw
 import _thread
 import pickle
 import threading
+import os
 # Multithreaded Python server : TCP Server Socket Thread Pool
 #
 import time
@@ -71,6 +72,9 @@ reconnectLock = threading.BoundedSemaphore(value=1)
 
 syncLock = threading.BoundedSemaphore(value=1)
 startLock = threading.BoundedSemaphore(value=1)
+
+global end
+end = False
  
 def getFastestUser(queue):
 	fastest = 0
@@ -78,9 +82,6 @@ def getFastestUser(queue):
 		if(queue[i]["Time"]< queue[fastest]["Time"]):
 			fastest = i
 	return queue[fastest]
-
- 
-
 
 
 class GameStateObj:
@@ -131,10 +132,13 @@ def HandleReconnectToAnotherServer():
 	global IPList
 	global notConnected
 	while (True):
-		print("Current IP list ",IPList)
+		print("IPlist is",IPList)
 		reconnectLock.acquire()
 	
 		if(notConnected):
+			#Reconnecting MSG
+			if (not firstConnection):
+				hideGrid()
 			if(IPList[0]!= (socket.gethostbyname(socket.gethostname()))):
 				# check ip list vs your own ip
 				try:
@@ -165,7 +169,9 @@ def HandleReconnectToAnotherServer():
 					syncLock.release()
 					print("should be connect")
 					notConnected = False
-				    
+					if (not firstConnection):
+						showGrid()	
+				
 				except Exception as e:  
 					print("unable to connect",e)
 					notConnected = True
@@ -178,7 +184,7 @@ def HandleReconnectToAnotherServer():
 				serverLock.release()
 				print("serverLock released, isServer set to true")
 				#_thread.start_new_thread(TurnClientIntoServer,(isServer,))
-		
+				
 				
 	 
 
@@ -360,14 +366,16 @@ def TurnClientIntoServer():
 			global number
 			players = 0 
 			number = 3
-			print("Len IPList",len(IPList))
-			
+			print("Len IPLIST", len(IPList))
+			print("IP List: ")
+			print(IPList)
+			 
 			global firstConnection
 			if (not firstConnection):
 				print("not first connection")
-				print("IP list is",IPList)
-				#len of the IP list now for that many clients. 
-				number = int(len(IPList)) -1
+				#len of the IP list now for that many clients.
+				number = int(len(IPList))-1
+				IPList.clear()
 				#number = number -1
 
 
@@ -387,6 +395,9 @@ def TurnClientIntoServer():
 						print ("Error: unable to start thread")
 					players = players+1
 
+				print("Do I get HEre?")
+				if (not firstConnection):
+					showGrid()
 		if(isServer):
 			print("sending initiliaze data")
 			global penWidth,rows,filledThreshold,myUserID, genesis
@@ -526,10 +537,9 @@ def checkIfServerAlive():
 	global tcpClientA, isServer
 	message = {"Alive":1}
 	while (True):
-		
 		if(isServer):
 			break
-		time.sleep(4)
+		time.sleep(1)	
 		if(tcpClientA):
 			try:
 				data = pickle.dumps(message)
@@ -655,12 +665,193 @@ def doneStroke(event):
 		print("new Listlength")
 		print(len(AreaList))
 
-		event.widget.delete("all")
-		
- 
+	event.widget.delete("all")
+
+def hideGrid():
+	print("Hide Grid Called")
+	global canvasList
+	for item in canvasList:
+		item.grid_remove()		
+
+def showGrid():
+	print("Show Grid Called")
+	global canvasList
+	for item in canvasList:
+		item.grid()
+
+def endChecker():
+    global end, canvasList, window
+    squares = rows*rows
+    while end == False:
+        endDict={"red":0,
+			"black":0,
+			"green":0,
+			"blue":0
+		}
+        for item in canvasList:
+            if item.cget('bg') == "red":
+                endDict["red"] += 1
+            if item.cget('bg') == "black":
+                endDict["black"] += 1
+            if item.cget('bg') == "green":
+                endDict["green"] += 1
+            if item.cget('bg') == "blue":
+                endDict["blue"] += 1
+        total = sum(endDict.values())    
+        print(total," ",squares)
+        if total >= squares:
+            print("End State!")
+            hideGrid()
+            end = True
+            winner = str(max(endDict, key=endDict.get)).upper()
+            endmsg = "Game is Over\n\nRed had " + str(endDict["red"]) + " squares.\nGreen had " + str(endDict["green"]) + " squares.\nBlue had " + str(endDict["blue"]) + " squares.\nBlack had " + str(endDict["black"]) + " squares.\n\nThe Winner is " + winner
+            Label(window, text=endmsg, font= ("Arial", 36)).grid()
+            time.sleep(15)
+            os._exit(1)
+        time.sleep(1)
+    return None
 #print("EnterID")
 #myUserID = input()
 
+def backToStart():
+    for widget in window.winfo_children():
+        widget.destroy()
+    roleCheck()
+
+def clearScreen():
+	for widget in window.winfo_children():
+			widget.destroy()
+
+def roleCheck():
+	global isServer
+	isServer = False
+	Label(window, text="\n      Welcome to Divide and Conquer      ").pack()
+	Label(window, text="\nAre you a server or a client?\n").pack()
+	Label(window, text="       ").pack(side=LEFT)
+	button1 = Button(window, text="Server", command=serverGUI)
+	button1.pack(side=LEFT)
+	Label(window, text="       ").pack(side=RIGHT)
+	button2 = Button(window, text="Client", command=clientGUI)
+	button2.pack(side=RIGHT)
+	Label(window, text="\n\n").pack()
+
+def serverGUI():
+    global isServer
+    isServer = True
+    clearScreen()
+    hostIP = str(socket.gethostbyname(socket.gethostname()) )
+    titleLabel = Label(window, text="\nDivide and Conquer - Server Settings")
+    titleLabel.pack()
+    ipLabel = Label(window, text="Server IP: "+hostIP)
+    ipLabel.pack()
+    rowLabel = Label(window, text="\n# of Rows")
+    rowLabel.pack()
+    rowScale = Scale(window, from_=1, to=10, orient=HORIZONTAL)
+    rowScale.pack()
+    penLabel = Label(window, text="\nPen Width")
+    penLabel.pack()
+    penScale = Scale(window, from_=1, to=10, orient=HORIZONTAL)
+    penScale.pack()
+    threshLabel = Label(window, text="\nFilled Threshold %")
+    threshLabel.pack()
+    filledThresholdScale = Scale(window, from_=1, to=100, orient=HORIZONTAL)
+    filledThresholdScale.pack()
+
+
+    Label(window, text="").pack()
+    buttonFrame = Frame(window)
+    buttonFrame.pack()
+    button = Button(buttonFrame, text="Submit Settings", command=lambda: submitSettings(rowScale, penScale, filledThresholdScale))
+    button.pack(side=LEFT)
+    Label(buttonFrame, text=" ").pack(side=LEFT)
+    button = Button(buttonFrame, text="Back", command=backToStart)
+    button.pack(side=LEFT)
+    Label(window, text="").pack()
+
+def clientGUI():
+	clearScreen()
+	Label(window, text="\nEnter the IP of the server\n").pack()
+	entryFrame = Frame(window)
+	entryFrame.pack()
+	Label(entryFrame, text="Server IP:").pack(side=LEFT)
+	ipEnter = Entry(entryFrame)
+	ipEnter.insert(0, "207.23.202.135")
+	ipEnter.pack(side=LEFT)
+	Label(entryFrame, text="").pack(side=LEFT)
+
+	Label(window, text="").pack()
+	buttonFrame = Frame(window)
+	buttonFrame.pack()
+
+	button1 = Button(buttonFrame, text="Connect", command= lambda: clientLobby(ipEnter))
+	button1.pack(side=LEFT)
+	Label(buttonFrame, text=" ").pack(side=LEFT)
+	button2 = Button(buttonFrame, text="Back", command=backToStart)
+	button2.pack(side=LEFT)
+	Label(window, text="").pack()
+
+def submitSettings(rowScale, penScale, filledThresholdScale):
+	global window, rows, penWidth, filledThreshold, startLock
+	startLock.acquire()
+	rows = rowScale.get()
+	penWidth= penScale.get()
+	filledThreshold = filledThresholdScale.get()
+	clearScreen()
+	print(rows)
+	print(penWidth)
+	print(filledThreshold)
+	button = Button(window, text="Start", command=start)
+	button.pack(anchor=CENTER)
+
+def clientLobby(ipEnter):
+	global connectionIP
+	connectionIP = ipEnter.get()
+	print(connectionIP)
+	for widget in window.winfo_children():
+		widget.destroy()
+	button = Button(window, text="Ready", command=start)
+	button.pack(anchor=CENTER)
+
+def start():
+	global window
+	countNumber = 0
+
+	if (not isServer):
+
+		global connectionIP
+		IPList.append(connectionIP)
+		#IPList.append(socket.gethostname())
+		_thread.start_new_thread(HandleReconnectToAnotherServer,())
+		UpdateBoard = UpdateClientFromServer()
+		UpdateBoard.start()
+		startLock.acquire()
+		sleep(1)
+		_thread.start_new_thread(checkIfServerAlive,())
+		#start thread here
+
+
+	_thread.start_new_thread(TurnClientIntoServer,())
+
+	clearScreen()
+	startLock.acquire()
+	for r in range(rows):
+		for c in range(rows):
+			item = Canvas(window, bg="grey", height=squareSize, width=squareSize)
+			item.grid(row=r, column=c)
+			item.bind("<Button-1>", xy)
+			item.bind("<B1-Motion>", addLine)
+			item.bind("<B1-ButtonRelease>", doneStroke)
+			canvasList.append(item)
+			countNumber =countNumber+1
+			state = GameStateObj()
+			state.canvasNumber = countNumber
+			state.color = "grey"
+			state.state = "normal"
+			CurrentGameBoard.append(state)
+	startLock.release()
+	_thread.start_new_thread(endChecker,())
+
+"""
 print("isServer?")
 Server = input()
 
@@ -696,7 +887,7 @@ if (not isServer):
 	#
 	print("enter Servers IP:")
 	#IP = input()
-	IPList.append(socket.gethostname())
+	IPList.append('207.23.176.76')
 	#IPList.append('192.168.0.12')
 	#IPList.append("207.23.181.250")
 	_thread.start_new_thread(HandleReconnectToAnotherServer,())
@@ -728,8 +919,9 @@ for r in range(rows):
 		state.state = "normal"
 		CurrentGameBoard.append(state)
 startLock.release()
-					   
+_thread.start_new_thread(endChecker,())
+"""					   
 
 
-print(window.grid_size())
+roleCheck()
 window.mainloop()
