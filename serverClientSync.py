@@ -6,6 +6,7 @@ from PIL import ImageDraw
 import _thread
 import pickle
 import threading
+import errno
 # Multithreaded Python server : TCP Server Socket Thread Pool
 #
 import time
@@ -132,7 +133,7 @@ def HandleReconnectToAnotherServer():
 	global IPList
 	global notConnected
 	while (True):
-		print("tryng to connect to ",IPList)
+		print("current IP list ",IPList)
 		reconnectLock.acquire()
 	
 		if(notConnected):
@@ -143,11 +144,11 @@ def HandleReconnectToAnotherServer():
 					if(socketUseList):
 						print("oldSocket found and pop")
 						oldSocket = socketUseList.pop()
-						oldSocket.shutdown(socket.SHUT_RDWR)
+						#oldSocket.shutdown(socket.SHUT_RDWR)
 						oldSocket.close()
 
 					time.sleep(4.0)
-					print("tryng to connect to ",IPList)
+					print("Current IP list",IPList)
 					print("first value is ", IPList[0])
 					host = IPList[0]
 					IPList.remove(host)
@@ -249,7 +250,7 @@ def ReceiveUpdatesFromClient(conn,ip,port):
 						lock.release()
 			
 			except Exception as e: 
-				print(e)
+				print("receive from client exception",e)
 
 			
 			
@@ -317,10 +318,14 @@ class UpdateClientFromServer(threading.Thread):
 					startLock.release()
 				
 			#TODO:change test general exception. 
-			except socket.timeout:
+
+			#except socket.timeout:
+			except EOFError as e:
+				print("Update from client Exception",e)
 			 
 				global notConnected
 				global reconnectLock
+				print("exception",e)
 				reconnectLock.release()
 				notConnected = True
 				print("reconnecting to next Server")
@@ -348,7 +353,7 @@ def TurnClientIntoServer():
 			if(socketUseList):
 				print("oldSocket found and pop")
 				oldSocket = socketUseList.pop()
-				oldSocket.shutdown(socket.SHUT_RDWR)
+				#oldSocket.shutdown(socket.SHUT_RDWR)
 				oldSocket.close()
 
 			TCP_IP = '0.0.0.0' 
@@ -414,8 +419,6 @@ def TurnClientIntoServer():
 					toSend.update({"UserID":i+1})
 					ConnectionList[i].send(pickle.dumps(toSend))
 					del toSend["UserID"]
-
-				
 				startLock.release()
 				break
 '''
@@ -466,9 +469,7 @@ def xy(event):
 		if (isServer):
 			#lock.acquire()
 			#buffer system to check the times, then if that time is
-			# smallest then set it, 
-			# other wise, dont
-			# server buffer time is added some delay. 
+		 
 			ServerSquareState.color = "yellow"
 			ServerSquareState.state = "disabled"
 			ServerSquareState.canvasNumber = position
