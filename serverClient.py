@@ -348,7 +348,7 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 1
+			number = 2
 			
 			global firstConnection
 			if (not firstConnection):
