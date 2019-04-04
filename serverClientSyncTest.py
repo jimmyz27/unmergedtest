@@ -124,8 +124,7 @@ def PriorityServerUpdate(gameStateDict):
 
  
 	 
-					
-
+	
 
 def HandleReconnectToAnotherServer():
 	global tcpClientA
@@ -360,8 +359,8 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 2
-			
+			number = 3
+			 
 			global firstConnection
 			if (not firstConnection):
 				print("not first connection")
