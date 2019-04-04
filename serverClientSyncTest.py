@@ -317,13 +317,13 @@ class UpdateClientFromServer(threading.Thread):
 				
 			#TODO:change test general exception. 
 			except socket.timeout:
-			 
-				global notConnected
-				global reconnectLock
-				reconnectLock.release()
-				notConnected = True
-				print("reconnecting to next Server")
 				pass
+				# global notConnected
+				# global reconnectLock
+				# reconnectLock.release()
+				# notConnected = True
+				# print("reconnecting to next Server")
+				# pass
 
 			except Exception as e:
 				#print("update client from server exception",e)
@@ -366,6 +366,7 @@ def TurnClientIntoServer():
 				print("not first connection")
 				#len of the IP list now for that many clients. 
 				number = number -1
+
 
 			if(isServer):
 				while players<number: 
@@ -519,9 +520,11 @@ def addLine(event):
 
 
 def checkIfServerAlive():
-	global tcpClientA
+	global tcpClientA, isServer
 	message = {"Alive":1}
 	while (True):
+		if(isServer):
+			break
 		time.sleep(4)
 		print()
 		try:
