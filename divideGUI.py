@@ -150,7 +150,7 @@ def HandleReconnectToAnotherServer():
 						# oldSocket.close()
 
 					time.sleep(4.0)
-					print("tryng to connect to ",IPList)
+					print("IPlist2 is",IPList)
 					print("first value is ", IPList[0])
 					host = IPList[0]
 					IPList.remove(host)
@@ -539,16 +539,18 @@ def checkIfServerAlive():
 	while (True):
 		if(isServer):
 			break
-		time.sleep(1)	
+		time.sleep(4)	
 		if(tcpClientA):
 			try:
 				data = pickle.dumps(message)
 				tcpClientA.send(data)
 			
 			except Exception as e:
+			 
 				print("Server down",e)
 				global notConnected
 				global reconnectLock
+
 				reconnectLock.release()
 				notConnected = True
 				print("handling disconnect")
@@ -585,6 +587,8 @@ def doneStroke(event):
 
 		if(len(id)==9):
 			position = int(id[8])
+		if(len(id)==11):
+			position = int(id[8])*100+ int(id[9])*10 + int(id[10])
 		if(len(id)==10):
 			position = int(id[8])*10 + int(id[9])
 		if(len(id)==8):
@@ -775,7 +779,7 @@ def clientGUI():
 	entryFrame.pack()
 	Label(entryFrame, text="Server IP:").pack(side=LEFT)
 	ipEnter = Entry(entryFrame)
-	ipEnter.insert(0, "207.23.202.135")
+	ipEnter.insert(0, "192.168.137.")
 	ipEnter.pack(side=LEFT)
 	Label(entryFrame, text="").pack(side=LEFT)
 
