@@ -375,7 +375,7 @@ def TurnClientIntoServer():
 			print("binded waiting for players")
 			global number
 			players = 0 
-			number = 0
+			number = 3
 			print("Len IPLIST", len(IPList))
 			print("IP List: ")
 			print(IPList)
